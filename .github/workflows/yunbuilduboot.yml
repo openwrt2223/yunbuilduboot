@@ -32,14 +32,12 @@ jobs:
 
     - name: 发布到ci
       uses: actions/upload-artifact@main
-      if: !cancelled()
       with:
         name: u-boot-with-spl.bin
         path: /yunbuilduboot/u-boot/u-boot-with-spl.bin
 
     - name: 创建release标签
       id: tag
-      if: !cancelled()
       run: |
         echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
         touch release.txt
@@ -63,7 +61,6 @@ jobs:
 
     - name: 删除旧的Releases
       uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: !cancelled()
       with:
         keep_latest: 1
         delete_tags: true

@@ -1,4 +1,4 @@
 git add .
-git commit -m "Update Repo"
+git commit -m "$1"
 git push origin
-echo "Update Repo OK!"
+echo "$1"
