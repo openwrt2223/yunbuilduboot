@@ -1,0 +1,71 @@
+name: 云编译u-boot
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH连接到Github Actions'
+        required: false
+        default: 'false'
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: 编译
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: chmod -R 0770 build.sh && bash build.sh
+        
+
+    - name: 发布到ci
+      uses: actions/upload-artifact@main
+      if: !cancelled()
+      with:
+        name: u-boot-with-spl.bin
+        path: /yunbuilduboot/u-boot/u-boot-with-spl.bin
+
+    - name: 创建release标签
+      id: tag
+      if: !cancelled()
+      run: |
+        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        touch release.txt
+        echo "::set-output name=status::success"
+
+    - name: 发布到release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: /yunbuilduboot/u-boot/u-boot-with-spl.bin
+
+    - name: 删除workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 1
+
+    - name: 删除旧的Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: !cancelled()
+      with:
+        keep_latest: 1
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
